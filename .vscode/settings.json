@@ -1,0 +1,13 @@
+{
+  "C_Cpp.codeAnalysis.clangTidy.checks.disabled": [
+    "clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling",
+    "clang-analyzer-security.ArrayBound"
+  ],
+  "makefile.launchConfigurations": [
+    {
+      "cwd": "/home/matteo/code/learning/learn_c/http_server/build",
+      "binaryPath": "/home/matteo/code/learning/learn_c/http_server/build/main",
+      "binaryArgs": []
+    }
+  ]
+}
