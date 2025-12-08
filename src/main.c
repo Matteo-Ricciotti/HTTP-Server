@@ -7,6 +7,7 @@
 
 #define PORT 8080
 #define BUFFER_SIZE 1024
+#define MAX_CLIENT_QUEUE 10
 
 int main()
 {
@@ -38,7 +39,7 @@ int main()
 
     // 4. Make the server listen to the socket
     // 10 is the max connections queue size
-    if (-1 == listen(server_fd, 10))
+    if (-1 == listen(server_fd, MAX_CLIENT_QUEUE))
     {
         perror("Error while listening the socket");
         return 1;
