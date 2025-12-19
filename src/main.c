@@ -11,7 +11,43 @@
 #define REQUEST_PATH_SIZE 256
 #define REQUEST_VERSION_SIZE 16
 #define REQUEST_BODY_SIZE 256
+#define RESPONSE_STATUS_CODE_SIZE 4
+#define RESPONSE_MESSAGE_SIZE 16
 #define MAX_CLIENT_QUEUE 10
+
+struct Route
+{
+    char *method;
+    char *path;
+    char status[RESPONSE_STATUS_CODE_SIZE + RESPONSE_MESSAGE_SIZE + 2]; // Space + \0
+    char body[REQUEST_BODY_SIZE + 1];
+} typedef Route;
+
+Route *find_route(Route *routes, int routes_len, char *method, char *path);
+
+Route *find_route(Route *routes, int routes_len, char *method, char *path)
+{
+    for (int i = 0; i < routes_len; ++i)
+    {
+        Route *currentRoute = &routes[i];
+
+        if (NULL == currentRoute->method ||
+            NULL == currentRoute->path ||
+            NULL == method ||
+            NULL == path)
+            continue;
+
+        int matchMethod = 0 == strcmp(currentRoute->method, method);
+        int matchPath = 0 == strcmp(currentRoute->path, path);
+
+        if (matchMethod && matchPath)
+        {
+            return currentRoute;
+        }
+    }
+
+    return NULL;
+}
 
 int main()
 {
@@ -50,6 +86,11 @@ int main()
     }
 
     printf("Server listening on port %d\n", PORT);
+
+    Route routes[] = {
+        {"GET", "/", "200 OK", "Hello World"},
+        {"GET", "/about", "200 OK", "About"},
+    };
 
     // Infinte loop to accept connections
     while (1)
@@ -91,30 +132,31 @@ int main()
         // Parse the request elements
         char method[REQUEST_METHOD_SIZE] = "";
         char path[REQUEST_PATH_SIZE] = "";
-        char version[REQUEST_VERSION_SIZE] = "";
+        char version[REQUEST_VERSION_SIZE + 1] = "";
 
         sscanf(requestBuffer, "%s %s %s", method, path, version);
 
         printf("Method: %s, Path: %s, Version: %s\n", method, path, version);
 
         // Create the formatted response
-        char responseBuffer[BUFFER_SIZE];
+        char responseBuffer[BUFFER_SIZE + 1];
 
-        char *responseMessage = "200 OK";
+        char *status;
         char *body;
 
-        if (0 == strcmp("/", path))
+        int routes_len = sizeof(routes) / sizeof(Route);
+
+        Route *found_route = find_route(routes, routes_len, method, path);
+
+        if (NULL == found_route)
         {
-            body = "Hello World";
-        }
-        else if (0 == strcmp("/about", path))
-        {
-            body = "About";
+            status = "404 Not Found";
+            body = "Not Found";
         }
         else
         {
-            responseMessage = "404 Not Found";
-            body = "Not Found";
+            status = found_route->status;
+            body = found_route->body;
         }
 
         sprintf(responseBuffer,
@@ -123,7 +165,7 @@ int main()
                 "Content-Length: %ld\r\n"
                 "\r\n"
                 "%s",
-                responseMessage,
+                status,
                 strlen(body),
                 body);
 
