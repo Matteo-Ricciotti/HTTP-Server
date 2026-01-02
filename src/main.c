@@ -8,6 +8,13 @@
 #include "../include/core.h"
 #include "../include/request.h"
 
+// Define routes
+const Route routes[] = {
+    {"GET", "/", "200 OK", "Hello World"},
+    {"GET", "/about", "200 OK", "About"},
+    {"GET", "/search", "200 OK", "Searching: ${q}"},
+};
+
 int main()
 {
     // Initialize server socket
@@ -17,13 +24,6 @@ int main()
     {
         return 1;
     }
-
-    // Define routes
-    Route routes[] = {
-        {"GET", "/", "200 OK", "Hello World"},
-        {"GET", "/about", "200 OK", "About"},
-        {"GET", "/search", "200 OK", "Searching:"},
-    };
 
     // Infinite loop to accept connections
     while (1)
@@ -48,16 +48,17 @@ int main()
         // Parse the request
         char method[REQUEST_METHOD_SIZE] = "";
         char path[REQUEST_PATH_SIZE] = "";
-        char version[REQUEST_VERSION_SIZE + 1] = "";
+        char queryString[REQUEST_QUERY_STRING_SIZE] = "";
+        char version[REQUEST_VERSION_SIZE] = "";
         QueryParam queryParams[REQUEST_MAX_QUERY_PARAMS] = {0};
 
-        parse_request(requestBuffer, method, path, version, queryParams);
+        parse_request(requestBuffer, method, path, queryString, version, queryParams);
 
         // Create the response
-        char responseBuffer[CLIENT_BUFFER_SIZE + 1];
+        char responseBuffer[CLIENT_BUFFER_SIZE];
 
         int routes_len = sizeof(routes) / sizeof(Route);
-        Route *found_route = find_route(routes, routes_len, method, path);
+        const Route *found_route = find_route(routes, routes_len, method, path);
 
         build_response(found_route, responseBuffer);
 

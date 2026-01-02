@@ -68,7 +68,7 @@ int wait_client_data(int client_fd, char *requestBuffer)
 {
     // recv() blocks the execution until some data is received
     // -1 is for '\0'
-    int bytes_read = recv(client_fd, requestBuffer, CLIENT_BUFFER_SIZE - 1, 0);
+    int bytes_read = recv(client_fd, requestBuffer, CLIENT_BUFFER_SIZE, 0);
 
     if (-1 == bytes_read)
     {

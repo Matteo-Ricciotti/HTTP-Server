@@ -5,8 +5,8 @@
   ],
   "makefile.launchConfigurations": [
     {
-      "cwd": "/home/matteo/code/learning/learn_c/http_server/build",
-      "binaryPath": "/home/matteo/code/learning/learn_c/http_server/build/main",
+      "cwd": "/home/matteo/code/http_server/build",
+      "binaryPath": "/home/matteo/code/http_server/build/main",
       "binaryArgs": []
     }
   ]
