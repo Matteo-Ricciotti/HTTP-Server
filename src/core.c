@@ -16,7 +16,15 @@ int init_server_socket()
     if (-1 == server_fd)
     {
         perror("Error while creating the server socket");
-        return -1;
+        exit(EXIT_FAILURE);
+    }
+
+    // Allow immediate reuse of the port after the program terminates
+    int opt = 1;
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)))
+    {
+        perror("setsockopt");
+        exit(EXIT_FAILURE);
     }
 
     // Create the address structure for the binding
@@ -33,14 +41,14 @@ int init_server_socket()
     if (-1 == bind(server_fd, (struct sockaddr *)&serverAddress, sizeof(serverAddress)))
     {
         perror("Error while binding the socket to the IP + port");
-        return -1;
+        exit(EXIT_FAILURE);
     }
 
     // Make the server listen to the socket
     if (-1 == listen(server_fd, MAX_CLIENT_QUEUE))
     {
         perror("Error while listening the socket");
-        return -1;
+        exit(EXIT_FAILURE);
     }
 
     printf("Server listening on port %d\n", PORT);
@@ -68,21 +76,21 @@ int wait_client_data(int client_fd, char *requestBuffer)
 {
     // recv() blocks the execution until some data is received
     // -1 is for '\0'
-    int bytes_read = recv(client_fd, requestBuffer, CLIENT_BUFFER_SIZE, 0);
+    int bytes_read = recv(client_fd, requestBuffer, CLIENT_BUFFER_SIZE - 1, 0);
 
     if (-1 == bytes_read)
     {
         perror("Error while reading data from client");
-        close(client_fd);
         return -1;
     }
 
     if (0 == bytes_read)
     {
         printf("The Client %d closed the connection\n\n", client_fd);
-        close(client_fd);
         return 0;
     }
+
+    requestBuffer[bytes_read] = '\0';
 
     printf("Received HTTP request:\n%s\n", requestBuffer);
 
@@ -96,7 +104,6 @@ int send_response(int client_fd, char *responseBuffer)
     if (-1 == bytes_sent)
     {
         perror("Error while sending data to the client");
-        close(client_fd);
         return -1;
     }
 

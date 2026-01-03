@@ -1,6 +1,8 @@
 #ifndef REQUEST_H
 #define REQUEST_H
 
+#include "core.h"
+
 #define REQUEST_METHOD_SIZE 8
 #define REQUEST_PATH_SIZE 128
 #define REQUEST_QUERY_KEY_SIZE 16
@@ -26,7 +28,7 @@ struct QueryParam
     char value[REQUEST_QUERY_VALUE_SIZE];
 } typedef QueryParam;
 
-void parse_request(char *requestBuffer, char *method, char *path, char *queryString, char *version, QueryParam *queryParams);
+int parse_request(char *requestBuffer, char *method, char *path, char *queryString, char *version, QueryParam *queryParams);
 void parse_query_params(QueryParam *queryParams, char *queryString);
 void build_response(const Route *found_route, char *responseBuffer);
 const Route *find_route(const Route *routes, int routes_len, char *method, char *path);

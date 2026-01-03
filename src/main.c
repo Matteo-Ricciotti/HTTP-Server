@@ -20,11 +20,6 @@ int main()
     // Initialize server socket
     int server_fd = init_server_socket();
 
-    if (-1 == server_fd)
-    {
-        return 1;
-    }
-
     // Infinite loop to accept connections
     while (1)
     {
@@ -42,6 +37,7 @@ int main()
 
         if (0 >= bytes_read)
         {
+            close(client_fd);
             continue;
         }
 
@@ -52,7 +48,13 @@ int main()
         char version[REQUEST_VERSION_SIZE] = "";
         QueryParam queryParams[REQUEST_MAX_QUERY_PARAMS] = {0};
 
-        parse_request(requestBuffer, method, path, queryString, version, queryParams);
+        int result = parse_request(requestBuffer, method, path, queryString, version, queryParams);
+
+        if (-1 == result)
+        {
+            close(client_fd);
+            continue;
+        }
 
         // Create the response
         char responseBuffer[CLIENT_BUFFER_SIZE];
@@ -67,6 +69,7 @@ int main()
 
         if (-1 == bytes_sent)
         {
+            close(client_fd);
             continue;
         }
 

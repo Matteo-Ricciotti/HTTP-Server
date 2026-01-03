@@ -1,14 +1,30 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "../include/request.h"
 
-void parse_request(char *requestBuffer, char *method, char *path, char *queryString, char *version, QueryParam *queryParams)
+int parse_request(char *requestBuffer, char *method, char *path, char *queryString, char *version, QueryParam *queryParams)
 {
     char url[REQUEST_PATH_SIZE + REQUEST_QUERY_STRING_SIZE] = {0};
 
-    sscanf(requestBuffer, "%s %s %s", method, url, version);
+    char formatStr[32] = "";
+
+    snprintf(formatStr, sizeof(formatStr),
+             "%%%ds %%%ds %%%ds",
+             REQUEST_METHOD_SIZE - 1,
+             REQUEST_PATH_SIZE + REQUEST_QUERY_STRING_SIZE - 1,
+             REQUEST_VERSION_SIZE - 1);
+
+    int args = sscanf(requestBuffer, formatStr, method, url, version);
+
+    if (3 > args)
+    {
+        printf("Malformed request line\n");
+        return -1;
+    }
 
     char *pStartQueryString = strchr(url, '?');
 
@@ -41,6 +57,8 @@ void parse_request(char *requestBuffer, char *method, char *path, char *queryStr
             printf("  [%d] %s = %s\n", i, queryParams[i].key, queryParams[i].value);
         }
     }
+
+    return 0;
 }
 
 void parse_query_params(QueryParam *queryParams, char *queryString)
@@ -51,7 +69,8 @@ void parse_query_params(QueryParam *queryParams, char *queryString)
         queryParams[i].value[0] = '\0';
     }
 
-    char *entry = strtok(queryString, "&");
+    char *pStrtok;
+    char *entry = strtok_r(queryString, "&", &pStrtok);
 
     int paramIndex = 0;
 
@@ -81,7 +100,7 @@ void parse_query_params(QueryParam *queryParams, char *queryString)
         }
 
         // NULL = continue on the previous string
-        entry = strtok(NULL, "&");
+        entry = strtok_r(NULL, "&", &pStrtok);
     }
 }
 
@@ -101,15 +120,15 @@ void build_response(const Route *found_route, char *responseBuffer)
         body = found_route->body;
     }
 
-    sprintf(responseBuffer,
-            "HTTP/1.1 %s\r\n"
-            "Content-Type: text/plain\r\n"
-            "Content-Length: %ld\r\n"
-            "\r\n"
-            "%s\n",
-            status,
-            strlen(body) + 1,
-            body);
+    snprintf(responseBuffer, CLIENT_BUFFER_SIZE,
+             "HTTP/1.1 %s\r\n"
+             "Content-Type: text/plain\r\n"
+             "Content-Length: %ld\r\n"
+             "\r\n"
+             "%s",
+             status,
+             strlen(body),
+             body);
 
     printf("Response:\n%s", responseBuffer);
 }
