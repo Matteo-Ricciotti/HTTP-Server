@@ -104,10 +104,56 @@ void parse_query_params(QueryParam *queryParams, char *queryString)
     }
 }
 
-void build_response(const Route *found_route, char *responseBuffer)
+QueryParam *find_param(QueryParam *queryParams, char *body)
+{
+    char key[REQUEST_QUERY_KEY_SIZE] = {0};
+    int keyIndex = -1;
+
+    int bodyLen = strlen(body);
+
+    for (int i = 0; i < bodyLen; ++i)
+    {
+        if (keyIndex + 1 >= REQUEST_QUERY_KEY_SIZE)
+        {
+            return NULL;
+        }
+
+        if ('{' == body[i])
+        {
+            keyIndex = 0;
+            continue;
+        }
+
+        if ('}' == body[i])
+        {
+            key[keyIndex] = '\0';
+            break;
+        }
+
+        if (-1 != keyIndex)
+        {
+            key[keyIndex] = body[i];
+            ++keyIndex;
+        }
+    }
+
+    for (int i = 0; i < REQUEST_MAX_QUERY_PARAMS; ++i)
+    {
+        QueryParam *currentParam = &queryParams[i];
+
+        if (0 == strcmp(currentParam->key, key))
+        {
+            return currentParam;
+        }
+    }
+
+    return NULL;
+}
+
+void build_response(Route *found_route, QueryParam *queryParams, char *responseBuffer)
 {
     const char *status;
-    const char *body;
+    char *body;
 
     if (NULL == found_route)
     {
@@ -120,6 +166,20 @@ void build_response(const Route *found_route, char *responseBuffer)
         body = found_route->body;
     }
 
+    char *finalBody;
+    strncpy(finalBody, body, REQUEST_BODY_SIZE);
+
+    QueryParam *foundParam = find_param(queryParams, finalBody);
+
+    if (foundParam)
+    {
+        char *pStartBracket = strchr(finalBody, '{');
+        if (pStartBracket)
+        {
+            strncpy(pStartBracket, foundParam->value, strlen(foundParam->value));
+        }
+    }
+
     snprintf(responseBuffer, CLIENT_BUFFER_SIZE,
              "HTTP/1.1 %s\r\n"
              "Content-Type: text/plain\r\n"
@@ -127,13 +187,13 @@ void build_response(const Route *found_route, char *responseBuffer)
              "\r\n"
              "%s",
              status,
-             strlen(body),
-             body);
+             strlen(finalBody),
+             finalBody);
 
     printf("Response:\n%s", responseBuffer);
 }
 
-const Route *find_route(const Route *routes, int routes_len, char *method, char *path)
+Route *find_route(Route *routes, int routes_len, char *method, char *path)
 {
     for (int i = 0; i < routes_len; ++i)
     {

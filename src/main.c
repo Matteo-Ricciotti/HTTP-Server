@@ -8,17 +8,17 @@
 #include "../include/core.h"
 #include "../include/request.h"
 
-// Define routes
-const Route routes[] = {
-    {"GET", "/", "200 OK", "Hello World"},
-    {"GET", "/about", "200 OK", "About"},
-    {"GET", "/search", "200 OK", "Searching: ${q}"},
-};
-
 int main()
 {
     // Initialize server socket
     int server_fd = init_server_socket();
+
+    // Define routes
+    Route routes[] = {
+        {"GET", "/", "200 OK", "Hello World"},
+        {"GET", "/about", "200 OK", "About"},
+        {"GET", "/search", "200 OK", "Searching {q}..."},
+    };
 
     // Infinite loop to accept connections
     while (1)
@@ -60,9 +60,9 @@ int main()
         char responseBuffer[CLIENT_BUFFER_SIZE];
 
         int routes_len = sizeof(routes) / sizeof(Route);
-        const Route *found_route = find_route(routes, routes_len, method, path);
+        Route *found_route = find_route((Route *)routes, routes_len, method, path);
 
-        build_response(found_route, responseBuffer);
+        build_response(found_route, queryParams, responseBuffer);
 
         // Send the response
         int bytes_sent = send_response(client_fd, responseBuffer);
